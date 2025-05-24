@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+		"ideas": {
+			"command": "cmd",
+			"args": [
+				"/c",
+				"npx -y mcp-remote@latest http://localhost:8000/mcp --allow-http --transport sse-only"
+			]
+		}
+	}
+}
