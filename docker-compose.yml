@@ -9,3 +9,7 @@ services:
       - ./app:/app/app
     networks:
       - app-network
+
+networks:
+  app-network:
+    driver: bridge
