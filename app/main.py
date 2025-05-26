@@ -5,7 +5,7 @@ from typing import Optional, List
 from datetime import datetime
 import uuid
 from fastapi_mcp import FastApiMCP
-from config import Config
+from app.config import Config
 
 
 # Improved API metadata
