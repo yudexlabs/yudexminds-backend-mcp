@@ -5,6 +5,7 @@ from typing import Optional, List
 from datetime import datetime
 import uuid
 from fastapi_mcp import FastApiMCP
+from fastapi.middleware.cors import CORSMiddleware
 from app.config import Config
 
 
@@ -18,6 +19,13 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 mcp = FastApiMCP(app)
 
