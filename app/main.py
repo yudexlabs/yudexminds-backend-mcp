@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, status, Request
+from fastapi import FastAPI, HTTPException, status, Depends, Form
+from fastapi.security import OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -7,6 +8,8 @@ import uuid
 from fastapi_mcp import FastApiMCP
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import Config
+from app.auth_mcp import BearerAuthMiddleware
+from app.auth_api import create_access_token, verify_token
 
 import logging
 
@@ -42,41 +45,11 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-# Middleware para logging de requests MCP
-@app.middleware("http")
-async def log_mcp_requests(request: Request, call_next):
-    if request.url.path.startswith("/mcp"):
-        logger.info(f"MCP Request: {request.method} {request.url}")
-        logger.info(f"Headers: {dict(request.headers)}")
-        
-        if request.method == "POST":
-            # Log del body para debugging (cuidado en producción)
-            body = await request.body()
-            logger.info(f"Body: {body.decode()[:200]}...")  # Primeros 200 chars
-    
-    response = await call_next(request)
-    
-    if request.url.path.startswith("/mcp"):
-        logger.info(f"MCP Response: {response.status_code}")
-    
-    return response
+# Agregar el middleware a tu app
+app.add_middleware(BearerAuthMiddleware)
 
 mcp = FastApiMCP(app)
 mcp.mount()
-
-# Endpoint de health check específico para MCP
-@app.get("/mcp/health")
-async def mcp_health():
-    """Health check específico para MCP"""
-    return {
-        "status": "healthy",
-        "service": "FastAPI MCP Server",
-        "mcp_endpoints": [
-            "/mcp (GET/POST)",
-            "/mcp/sse",
-            "/mcp/http"
-        ]
-    }
 
 # MongoDB connection
 @app.on_event("startup")
@@ -137,13 +110,20 @@ async def root():
         }
     }
 
+@app.post("/token", tags=["Auth"])
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    if form_data.username != Config.USERNAME_MOCKUP_USER or form_data.password != Config.PASSWORD_MOCKUP_USER:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    access_token = create_access_token(data={"sub": form_data.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
 @app.get(
         "/ideas/",
         response_model=List[Idea],
         summary="Get all ideas",
         description="Get all ideas.",
         tags=["Ideas"])
-async def get_ideas():
+async def get_ideas(username: str = Depends(verify_token)):
     """
     Get all ideas.
     """
@@ -157,7 +137,7 @@ async def get_ideas():
         description="Get a specific idea by its ID.",
         status_code=status.HTTP_200_OK,
         tags=["Ideas"])
-async def get_idea(idea_id: str):
+async def get_idea(idea_id: str, username: str = Depends(verify_token)):
     """
     Get a specific idea by its ID.
     """
@@ -177,7 +157,7 @@ async def get_idea(idea_id: str):
         summary="Create a new idea",
         description="Create a new idea with the provided details."
 )
-async def create_idea(idea: IdeaCreate):
+async def create_idea(idea: IdeaCreate, username: str = Depends(verify_token)):
     """
     Create a new idea.
     """
@@ -207,7 +187,7 @@ async def create_idea(idea: IdeaCreate):
         tags=["Ideas"],
         status_code=200
         )
-async def update_idea(idea_id: str, idea: IdeaUpdate):
+async def update_idea(idea_id: str, idea: IdeaUpdate, username: str = Depends(verify_token)):
     """
     Update an existing idea.
     """
@@ -235,7 +215,7 @@ async def update_idea(idea_id: str, idea: IdeaUpdate):
         tags=["Ideas"],
         status_code=200
         )
-async def change_status_idea(idea_id: str, idea: IdeaUpdate):
+async def change_status_idea(idea_id: str, idea: IdeaUpdate, username: str = Depends(verify_token)):
     """
     Change the status of an existing idea.
     """
@@ -262,7 +242,7 @@ async def change_status_idea(idea_id: str, idea: IdeaUpdate):
         tags=["Ideas"],
         status_code=status.HTTP_204_NO_CONTENT
         )
-async def delete_idea(idea_id: str):
+async def delete_idea(idea_id: str, username: str = Depends(verify_token)):
     """
     Delete an existing idea.
     """
