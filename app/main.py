@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -8,6 +8,11 @@ from fastapi_mcp import FastApiMCP
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import Config
 
+import logging
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger= logging.getLogger(__name__)
 
 # Improved API metadata
 app = FastAPI(
@@ -19,17 +24,59 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
+# CORS más específico y optimizado para MCP
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["*"],  # En producción, especifica dominios
+    allow_credentials=True,  # Cambiar a True para MCP
     allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
-    allow_headers=["*"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization", 
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "Cache-Control"
+    ],
     expose_headers=["*"]
 )
 
+# Middleware para logging de requests MCP
+@app.middleware("http")
+async def log_mcp_requests(request: Request, call_next):
+    if request.url.path.startswith("/mcp"):
+        logger.info(f"MCP Request: {request.method} {request.url}")
+        logger.info(f"Headers: {dict(request.headers)}")
+        
+        if request.method == "POST":
+            # Log del body para debugging (cuidado en producción)
+            body = await request.body()
+            logger.info(f"Body: {body.decode()[:200]}...")  # Primeros 200 chars
+    
+    response = await call_next(request)
+    
+    if request.url.path.startswith("/mcp"):
+        logger.info(f"MCP Response: {response.status_code}")
+    
+    return response
+
 mcp = FastApiMCP(app)
 mcp.mount()
+
+# Endpoint de health check específico para MCP
+@app.get("/mcp/health")
+async def mcp_health():
+    """Health check específico para MCP"""
+    return {
+        "status": "healthy",
+        "service": "FastAPI MCP Server",
+        "mcp_endpoints": [
+            "/mcp (GET/POST)",
+            "/mcp/sse",
+            "/mcp/http"
+        ]
+    }
 
 # MongoDB connection
 @app.on_event("startup")
