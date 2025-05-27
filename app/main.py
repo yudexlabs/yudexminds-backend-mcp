@@ -28,6 +28,8 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
+app.router.redirect_slashes = False
+
 mcp = FastApiMCP(app)
 mcp.mount()
 
