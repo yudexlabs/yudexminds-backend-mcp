@@ -24,10 +24,10 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# CORS más específico y optimizado para MCP
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, especifica dominios
+    allow_origins=["*"],  # En producción, especificar dominios permitidos
     allow_credentials=True,  # Cambiar a True para MCP
     allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
     allow_headers=[
