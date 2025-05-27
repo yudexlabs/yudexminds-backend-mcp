@@ -28,14 +28,7 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-mcp = FastApiMCP(
-    app,
-    # Configuración específica para dual transport
-    mount_path="/backend/yudexminds/mcp",
-    enable_sse=True,
-    enable_http=True,
-    cors_allow_origins=["*"]
-)
+mcp = FastApiMCP(app)
 mcp.mount()
 
 # MongoDB connection
