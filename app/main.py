@@ -48,7 +48,9 @@ app.add_middleware(
 # Agregar el middleware a tu app
 app.add_middleware(BearerAuthMiddleware)
 
-mcp = FastApiMCP(app)
+mcp = FastApiMCP(app,
+                name="YudexMinds MCP",
+                exclude_operations=["delete_idea", "login_token_post"] )
 mcp.mount()
 
 # MongoDB connection
@@ -137,7 +139,7 @@ async def get_ideas():
         description="Get a specific idea by its ID.",
         status_code=status.HTTP_200_OK,
         tags=["Ideas"])
-async def get_idea(idea_id: str, username: str = Depends(verify_token)):
+async def get_idea(idea_id: str):
     """
     Get a specific idea by its ID.
     """
@@ -157,7 +159,7 @@ async def get_idea(idea_id: str, username: str = Depends(verify_token)):
         summary="Create a new idea",
         description="Create a new idea with the provided details."
 )
-async def create_idea(idea: IdeaCreate, username: str = Depends(verify_token)):
+async def create_idea(idea: IdeaCreate):
     """
     Create a new idea.
     """
