@@ -45,7 +45,7 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-# Agregar el middleware a tu app
+# BearerAuthMiddleware MCP 
 app.add_middleware(BearerAuthMiddleware)
 
 mcp = FastApiMCP(app,
