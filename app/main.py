@@ -50,7 +50,7 @@ app.add_middleware(BearerAuthMiddleware)
 
 mcp = FastApiMCP(app,
                 name="YudexMinds MCP",
-                exclude_operations=["delete_idea", "login_token_post"] )
+                exclude_tags=["login_token_post", "delete_idea_ideas__idea_id__delete"] )
 mcp.mount()
 
 # MongoDB connection
