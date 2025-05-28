@@ -123,7 +123,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         summary="Get all ideas",
         description="Get all ideas.",
         tags=["Ideas"])
-async def get_ideas(username: str = Depends(verify_token)):
+async def get_ideas():
     """
     Get all ideas.
     """
